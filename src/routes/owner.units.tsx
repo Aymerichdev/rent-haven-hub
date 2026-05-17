@@ -15,13 +15,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Pencil, Building2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Building2, KeyRound, DoorOpen, X } from "lucide-react";
 import type { Unit } from "@/lib/types";
 import prop1 from "@/assets/prop1.jpg";
 import { toast } from "sonner";
