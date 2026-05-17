@@ -430,20 +430,43 @@ function Page() {
                     </Select>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button size="icon" variant="ghost" onClick={() => startEdit(u)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        del(u.id);
-                        toast.success("Eliminada");
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      {(u.status === "available" || u.status === "maintenance") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => openRent(u)}
+                        >
+                          <KeyRound className="h-3.5 w-3.5" /> Alquilada
+                        </Button>
+                      )}
+                      {u.status === "rented" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => setReleaseUnit(u)}
+                        >
+                          <DoorOpen className="h-3.5 w-3.5" /> Disponible
+                        </Button>
+                      )}
+                      <Button size="icon" variant="ghost" onClick={() => startEdit(u)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          del(u.id);
+                          toast.success("Eliminada");
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </td>
+
                 </tr>
               );
             })}
