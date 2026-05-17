@@ -61,6 +61,18 @@ interface AppState {
   // units (entidad alquilable)
   addUnit: (u: Omit<Unit, "id">) => DeleteResult;
   updateUnit: (id: string, patch: Partial<Unit>) => void;
+  markUnitRented: (
+    unitId: string,
+    contract: {
+      tenantId?: string;
+      startDate: string;
+      endDate: string;
+      monthlyRent: number;
+      deposit: number;
+      contractPhotoUrl?: string;
+    },
+  ) => void;
+  markUnitAvailable: (unitId: string) => void;
   deleteUnit: (id: string) => void;
 
   // amenities
