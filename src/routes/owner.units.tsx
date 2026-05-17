@@ -47,6 +47,61 @@ function Page() {
   const add = useAppStore((s) => s.addUnit);
   const del = useAppStore((s) => s.deleteUnit);
   const upd = useAppStore((s) => s.updateUnit);
+  const allUsers = useAppStore((s) => s.users);
+  const markRented = useAppStore((s) => s.markUnitRented);
+  const markAvailable = useAppStore((s) => s.markUnitAvailable);
+  const tenants = useMemo(() => allUsers.filter((u) => u.role === "tenant"), [allUsers]);
+
+  const today = () => new Date().toISOString().slice(0, 10);
+  const [rentUnit, setRentUnit] = useState<Unit | null>(null);
+  const [rentTenant, setRentTenant] = useState<string>("");
+  const [rentStart, setRentStart] = useState<string>("");
+  const [rentEnd, setRentEnd] = useState<string>("");
+  const [rentMonthly, setRentMonthly] = useState<number>(0);
+  const [rentDeposit, setRentDeposit] = useState<number>(0);
+  const [rentPhoto, setRentPhoto] = useState<string>("");
+  const [releaseUnit, setReleaseUnit] = useState<Unit | null>(null);
+
+  const openRent = (u: Unit) => {
+    setRentUnit(u);
+    setRentTenant("");
+    setRentStart(today());
+    setRentEnd("");
+    setRentMonthly(u.rent);
+    setRentDeposit(u.rent * 2);
+    setRentPhoto("");
+  };
+
+  const onPhotoChange = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setRentPhoto(String(reader.result));
+    reader.readAsDataURL(file);
+  };
+
+  const confirmRent = () => {
+    if (!rentUnit) return;
+    if (!rentStart || !rentEnd) return toast.error("Inicio y fin son obligatorios");
+    if (rentEnd <= rentStart) return toast.error("La fecha de fin debe ser posterior al inicio");
+    markRented(rentUnit.id, {
+      tenantId: rentTenant || undefined,
+      startDate: rentStart,
+      endDate: rentEnd,
+      monthlyRent: rentMonthly,
+      deposit: rentDeposit,
+      contractPhotoUrl: rentPhoto || undefined,
+    });
+    toast.success("Unidad marcada como alquilada");
+    setRentUnit(null);
+  };
+
+  const confirmRelease = () => {
+    if (!releaseUnit) return;
+    markAvailable(releaseUnit.id);
+    toast.success("Unidad disponible");
+    setReleaseUnit(null);
+  };
+
 
   const ownerBuildings = useMemo(
     () => buildings.filter((b) => b.ownerId === user?.id),
