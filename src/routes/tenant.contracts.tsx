@@ -55,6 +55,14 @@ function Page() {
                   {c.status === "active" ? "Activo" : "Finalizado"}
                 </Badge>
               </div>
+              {c.contractPhotoUrl && (
+                <img
+                  src={c.contractPhotoUrl}
+                  alt="Contrato"
+                  className="mt-3 max-h-48 cursor-pointer rounded-lg object-contain"
+                  onClick={() => window.open(c.contractPhotoUrl)}
+                />
+              )}
             </div>
           );
         })}
