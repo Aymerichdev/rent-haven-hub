@@ -15,13 +15,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Pencil, Building2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Building2, KeyRound, DoorOpen, X } from "lucide-react";
 import type { Unit } from "@/lib/types";
 import prop1 from "@/assets/prop1.jpg";
 import { toast } from "sonner";
@@ -37,6 +47,61 @@ function Page() {
   const add = useAppStore((s) => s.addUnit);
   const del = useAppStore((s) => s.deleteUnit);
   const upd = useAppStore((s) => s.updateUnit);
+  const allUsers = useAppStore((s) => s.users);
+  const markRented = useAppStore((s) => s.markUnitRented);
+  const markAvailable = useAppStore((s) => s.markUnitAvailable);
+  const tenants = useMemo(() => allUsers.filter((u) => u.role === "tenant"), [allUsers]);
+
+  const today = () => new Date().toISOString().slice(0, 10);
+  const [rentUnit, setRentUnit] = useState<Unit | null>(null);
+  const [rentTenant, setRentTenant] = useState<string>("");
+  const [rentStart, setRentStart] = useState<string>("");
+  const [rentEnd, setRentEnd] = useState<string>("");
+  const [rentMonthly, setRentMonthly] = useState<number>(0);
+  const [rentDeposit, setRentDeposit] = useState<number>(0);
+  const [rentPhoto, setRentPhoto] = useState<string>("");
+  const [releaseUnit, setReleaseUnit] = useState<Unit | null>(null);
+
+  const openRent = (u: Unit) => {
+    setRentUnit(u);
+    setRentTenant("");
+    setRentStart(today());
+    setRentEnd("");
+    setRentMonthly(u.rent);
+    setRentDeposit(u.rent * 2);
+    setRentPhoto("");
+  };
+
+  const onPhotoChange = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setRentPhoto(String(reader.result));
+    reader.readAsDataURL(file);
+  };
+
+  const confirmRent = () => {
+    if (!rentUnit) return;
+    if (!rentStart || !rentEnd) return toast.error("Inicio y fin son obligatorios");
+    if (rentEnd <= rentStart) return toast.error("La fecha de fin debe ser posterior al inicio");
+    markRented(rentUnit.id, {
+      tenantId: rentTenant || undefined,
+      startDate: rentStart,
+      endDate: rentEnd,
+      monthlyRent: rentMonthly,
+      deposit: rentDeposit,
+      contractPhotoUrl: rentPhoto || undefined,
+    });
+    toast.success("Unidad marcada como alquilada");
+    setRentUnit(null);
+  };
+
+  const confirmRelease = () => {
+    if (!releaseUnit) return;
+    markAvailable(releaseUnit.id);
+    toast.success("Unidad disponible");
+    setReleaseUnit(null);
+  };
+
 
   const ownerBuildings = useMemo(
     () => buildings.filter((b) => b.ownerId === user?.id),
@@ -365,20 +430,43 @@ function Page() {
                     </Select>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button size="icon" variant="ghost" onClick={() => startEdit(u)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        del(u.id);
-                        toast.success("Eliminada");
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      {(u.status === "available" || u.status === "maintenance") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => openRent(u)}
+                        >
+                          <KeyRound className="h-3.5 w-3.5" /> Alquilada
+                        </Button>
+                      )}
+                      {u.status === "rented" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => setReleaseUnit(u)}
+                        >
+                          <DoorOpen className="h-3.5 w-3.5" /> Disponible
+                        </Button>
+                      )}
+                      <Button size="icon" variant="ghost" onClick={() => startEdit(u)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          del(u.id);
+                          toast.success("Eliminada");
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </td>
+
                 </tr>
               );
             })}
@@ -395,6 +483,123 @@ function Page() {
           Mantenimiento
         </Badge>
       </div>
+
+      <Dialog open={!!rentUnit} onOpenChange={(o) => !o && setRentUnit(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Marcar como alquilada · {rentUnit?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5">
+            <section className="space-y-2">
+              <h3 className="font-display text-sm font-bold">Inquilino (opcional)</h3>
+              <Label className="text-xs">Asignar inquilino</Label>
+              <Select
+                value={rentTenant || "__none__"}
+                onValueChange={(v) => setRentTenant(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sin inquilino asignado</SelectItem>
+                  {tenants.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} · {t.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </section>
+
+            <section className="space-y-3">
+              <h3 className="font-display text-sm font-bold">Contrato</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-xs">Inicio del contrato</Label>
+                  <Input
+                    type="date"
+                    value={rentStart}
+                    onChange={(e) => setRentStart(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Fin del contrato</Label>
+                  <Input
+                    type="date"
+                    value={rentEnd}
+                    onChange={(e) => setRentEnd(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Renta mensual (₡)</Label>
+                  <Input
+                    type="number"
+                    value={rentMonthly}
+                    onChange={(e) => setRentMonthly(Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Depósito (₡)</Label>
+                  <Input
+                    type="number"
+                    value={rentDeposit}
+                    onChange={(e) => setRentDeposit(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="font-display text-sm font-bold">Foto del contrato (opcional)</h3>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => onPhotoChange(e.target.files?.[0])}
+              />
+              {rentPhoto && (
+                <div className="space-y-2">
+                  <img
+                    src={rentPhoto}
+                    alt="Contrato"
+                    className="max-w-[200px] rounded-lg border border-border"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setRentPhoto("")}
+                  >
+                    <X className="mr-1 h-3.5 w-3.5" /> Eliminar foto
+                  </Button>
+                </div>
+              )}
+            </section>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRentUnit(null)}>
+              Cancelar
+            </Button>
+            <Button className="bg-gradient-warm" onClick={confirmRent}>
+              Confirmar alquiler
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!releaseUnit} onOpenChange={(o) => !o && setReleaseUnit(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar como disponible</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro? Esto cerrará el contrato activo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRelease}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -114,13 +114,16 @@ export interface AmenityBooking {
 export interface Contract {
   id: string;
   unitId: string;
-  tenantId: string;
+  /** Opcional: el owner puede crear un contrato sin asignar inquilino aún. */
+  tenantId?: string;
   ownerId: string;
   startDate: string;
   endDate: string;
   monthlyRent: number;
   deposit: number;
   status: "active" | "ended";
+  /** Foto del contrato físico (base64 data URL). */
+  contractPhotoUrl?: string;
 }
 
 export interface Payment {

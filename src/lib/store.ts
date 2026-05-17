@@ -61,6 +61,18 @@ interface AppState {
   // units (entidad alquilable)
   addUnit: (u: Omit<Unit, "id">) => DeleteResult;
   updateUnit: (id: string, patch: Partial<Unit>) => void;
+  markUnitRented: (
+    unitId: string,
+    contract: {
+      tenantId?: string;
+      startDate: string;
+      endDate: string;
+      monthlyRent: number;
+      deposit: number;
+      contractPhotoUrl?: string;
+    },
+  ) => void;
+  markUnitAvailable: (unitId: string) => void;
   deleteUnit: (id: string) => void;
 
   // amenities
@@ -201,6 +213,40 @@ export const useAppStore = create<AppState>()(
       updateUnit: (id, patch) =>
         set((s) => ({ units: s.units.map((u) => (u.id === id ? { ...u, ...patch } : u)) })),
       deleteUnit: (id) => set((s) => ({ units: s.units.filter((u) => u.id !== id) })),
+
+      markUnitRented: (unitId, contract) => {
+        const unit = get().units.find((u) => u.id === unitId);
+        if (!unit) return;
+        const newContract: Contract = {
+          id: uid(),
+          unitId,
+          tenantId: contract.tenantId,
+          ownerId: unit.ownerId,
+          startDate: contract.startDate,
+          endDate: contract.endDate,
+          monthlyRent: contract.monthlyRent,
+          deposit: contract.deposit,
+          status: "active",
+          contractPhotoUrl: contract.contractPhotoUrl,
+        };
+        set((s) => ({
+          units: s.units.map((u) =>
+            u.id === unitId ? { ...u, status: "rented", tenantId: contract.tenantId } : u,
+          ),
+          contracts: [...s.contracts, newContract],
+        }));
+      },
+      markUnitAvailable: (unitId) => {
+        set((s) => ({
+          units: s.units.map((u) =>
+            u.id === unitId ? { ...u, status: "available", tenantId: undefined } : u,
+          ),
+          contracts: s.contracts.map((c) =>
+            c.unitId === unitId && c.status === "active" ? { ...c, status: "ended" } : c,
+          ),
+        }));
+      },
+
 
       addAmenity: (a) => set((s) => ({ amenities: [...s.amenities, { ...a, id: uid() }] })),
       updateAmenity: (id, patch) =>
