@@ -483,6 +483,123 @@ function Page() {
           Mantenimiento
         </Badge>
       </div>
+
+      <Dialog open={!!rentUnit} onOpenChange={(o) => !o && setRentUnit(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Marcar como alquilada · {rentUnit?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5">
+            <section className="space-y-2">
+              <h3 className="font-display text-sm font-bold">Inquilino (opcional)</h3>
+              <Label className="text-xs">Asignar inquilino</Label>
+              <Select
+                value={rentTenant || "__none__"}
+                onValueChange={(v) => setRentTenant(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sin inquilino asignado</SelectItem>
+                  {tenants.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} · {t.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </section>
+
+            <section className="space-y-3">
+              <h3 className="font-display text-sm font-bold">Contrato</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-xs">Inicio del contrato</Label>
+                  <Input
+                    type="date"
+                    value={rentStart}
+                    onChange={(e) => setRentStart(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Fin del contrato</Label>
+                  <Input
+                    type="date"
+                    value={rentEnd}
+                    onChange={(e) => setRentEnd(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Renta mensual (₡)</Label>
+                  <Input
+                    type="number"
+                    value={rentMonthly}
+                    onChange={(e) => setRentMonthly(Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Depósito (₡)</Label>
+                  <Input
+                    type="number"
+                    value={rentDeposit}
+                    onChange={(e) => setRentDeposit(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="font-display text-sm font-bold">Foto del contrato (opcional)</h3>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => onPhotoChange(e.target.files?.[0])}
+              />
+              {rentPhoto && (
+                <div className="space-y-2">
+                  <img
+                    src={rentPhoto}
+                    alt="Contrato"
+                    className="max-w-[200px] rounded-lg border border-border"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setRentPhoto("")}
+                  >
+                    <X className="mr-1 h-3.5 w-3.5" /> Eliminar foto
+                  </Button>
+                </div>
+              )}
+            </section>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRentUnit(null)}>
+              Cancelar
+            </Button>
+            <Button className="bg-gradient-warm" onClick={confirmRent}>
+              Confirmar alquiler
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!releaseUnit} onOpenChange={(o) => !o && setReleaseUnit(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar como disponible</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro? Esto cerrará el contrato activo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRelease}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
