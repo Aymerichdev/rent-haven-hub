@@ -178,7 +178,16 @@ export const meterToInsert = (m: Omit<Meter, "id">): Tables["meters"]["Insert"] 
 });
 
 // ---------------- rental_requests ----------------
-export const rowToRequest = (r: Tables["rental_requests"]["Row"]): RentalRequest => ({
+export const rowToRequest = (r: Tables["rental_requests"]["Row"]): RentalRequest => {
+  const row = r as Tables["rental_requests"]["Row"] & {
+    national_id?: string | null;
+    occupation?: string | null;
+    bio?: string | null;
+    recommendations?: string | null;
+    profile_photo_url?: string | null;
+  };
+
+  return ({
   id: r.id,
   unitId: r.unit_id,
   tenantId: r.tenant_id,
@@ -187,9 +196,15 @@ export const rowToRequest = (r: Tables["rental_requests"]["Row"]): RentalRequest
   message: r.message,
   status: r.status as RentalRequest["status"],
   ownerResponse: r.owner_response ?? undefined,
+  nationalId: row.national_id ?? undefined,
+  occupation: row.occupation ?? undefined,
+  bio: row.bio ?? undefined,
+  recommendations: row.recommendations ?? undefined,
+  profilePhotoUrl: row.profile_photo_url ?? undefined,
   createdAt: (r.created_at ?? "").slice(0, 10),
   updatedAt: r.updated_at ? r.updated_at.slice(0, 10) : undefined,
 });
+};
 
 export const requestToInsert = (
   r: Omit<RentalRequest, "id" | "createdAt" | "status" | "ownerResponse" | "updatedAt">,

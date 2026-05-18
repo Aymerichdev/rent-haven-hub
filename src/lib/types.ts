@@ -89,6 +89,11 @@ export interface RentalRequest {
   status: "pending" | "approved" | "rejected";
   /** Mensaje del propietario al aprobar/rechazar. */
   ownerResponse?: string;
+  nationalId?: string;
+  occupation?: string;
+  bio?: string;
+  recommendations?: string;
+  profilePhotoUrl?: string;
   createdAt: string;
   /** Fecha de la última actualización (respuesta del owner). */
   updatedAt?: string;

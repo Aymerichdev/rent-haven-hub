@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore, getUnitAddress, getUnitCity } from "@/lib/store";
 import { PublicNavbar, Footer } from "@/components/site/PublicNavbar";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Bed, Bath, Square, MapPin, Building2, Heart, Share2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Alert } from "@/components/ui/alert";
 
 export const Route = createFileRoute("/units/$unitId")({
   component: Page,
@@ -24,6 +26,41 @@ function Page() {
   const nav = useNavigate();
   const [msg, setMsg] = useState("");
   const [phone, setPhone] = useState("");
+  const [tenantProfileReady, setTenantProfileReady] = useState(false);
+
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTenantProfile = async () => {
+      if (!user || user.role !== "tenant") {
+        if (!cancelled) setTenantProfileReady(false);
+        return;
+      }
+
+      const { data: tenantProfile } = await supabase
+        .from("tenant_profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const ready = Boolean(
+        tenantProfile &&
+          tenantProfile.phone?.trim() &&
+          tenantProfile.national_id?.trim() &&
+          tenantProfile.occupation?.trim(),
+      );
+      if (!cancelled) {
+        setTenantProfileReady(ready);
+        setPhone(tenantProfile?.phone ?? "");
+      }
+    };
+
+    loadTenantProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const unit = units.find((u) => u.id === unitId);
   const building = buildings.find((b) => b.id === unit?.buildingId);
@@ -53,16 +90,15 @@ function Page() {
       toast.error("Solo inquilinos pueden solicitar alquileres");
       return;
     }
-    const cleanPhone = phone.trim();
-    if (cleanPhone.length < 6) {
-      toast.error("Ingresa un número de teléfono válido");
+    if (!tenantProfileReady) {
+      toast.error("Completa tu perfil antes de enviar solicitudes");
       return;
     }
     createReq({
       unitId: unit.id,
       tenantId: user.id,
       ownerId: unit.ownerId,
-      phone: cleanPhone,
+      phone: phone.trim(),
       message: msg.trim() || "Estoy interesado/a en esta unidad.",
     });
     setMsg("");
@@ -215,44 +251,55 @@ function Page() {
                 El propietario se pondrá en contacto contigo tras tu solicitud.
               </p>
 
-              <div className="mt-5 space-y-3">
-                <div>
-                  <Label htmlFor="req-phone" className="text-xs">
-                    Teléfono de contacto *
-                  </Label>
-                  <Input
-                    id="req-phone"
-                    type="tel"
-                    inputMode="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+506 612 345 678"
-                    maxLength={30}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="req-msg" className="text-xs">
-                    Mensaje
-                  </Label>
-                  <Textarea
-                    id="req-msg"
-                    value={msg}
-                    onChange={(e) => setMsg(e.target.value)}
-                    placeholder="Hola, me gustaría más información..."
-                    maxLength={500}
-                    className="mt-1 min-h-24"
-                  />
-                </div>
-              </div>
+              {user?.role === "tenant" && !tenantProfileReady ? (
+                <Alert variant="destructive" className="mt-5">
+                  <p>Debes completar tu perfil antes de enviar solicitudes de alquiler.</p>
+                  <Link to="/tenant/profile" className="mt-2 inline-block font-medium underline">
+                    Completar perfil →
+                  </Link>
+                </Alert>
+              ) : (
+                <>
+                  <div className="mt-5 space-y-3">
+                    <div>
+                      <Label htmlFor="req-phone" className="text-xs">
+                        Teléfono de contacto *
+                      </Label>
+                      <Input
+                        id="req-phone"
+                        type="tel"
+                        inputMode="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+506 612 345 678"
+                        maxLength={30}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="req-msg" className="text-xs">
+                        Mensaje
+                      </Label>
+                      <Textarea
+                        id="req-msg"
+                        value={msg}
+                        onChange={(e) => setMsg(e.target.value)}
+                        placeholder="Hola, me gustaría más información..."
+                        maxLength={500}
+                        className="mt-1 min-h-24"
+                      />
+                    </div>
+                  </div>
 
-              <Button
-                onClick={submit}
-                className="mt-4 w-full bg-gradient-warm"
-                disabled={unit.status !== "available"}
-              >
-                {unit.status === "available" ? "Solicitar alquiler" : "No disponible"}
-              </Button>
+                  <Button
+                    onClick={submit}
+                    className="mt-4 w-full bg-gradient-warm"
+                    disabled={unit.status !== "available"}
+                  >
+                    {unit.status === "available" ? "Solicitar alquiler" : "No disponible"}
+                  </Button>
+                </>
+              )}
               {!user && (
                 <p className="mt-3 text-center text-xs text-muted-foreground">
                   <Link to="/login" className="font-medium text-primary hover:underline">
