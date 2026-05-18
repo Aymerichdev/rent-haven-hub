@@ -615,7 +615,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   setBookingStatus: async (id, status, ownerNote) => {
-    const update: Record<string, unknown> = { status };
+    const update: Database["public"]["Tables"]["amenity_bookings"]["Update"] = { status };
     if (ownerNote?.trim()) update.owner_note = ownerNote.trim();
     const { data, error } = await supabase
       .from("amenity_bookings")
