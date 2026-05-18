@@ -453,40 +453,54 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   markUnitRented: async (unitId, contract) => {
-    const unit = get().units.find((u) => u.id === unitId);
-    if (!unit) return;
-    const { data: contractRow, error: cErr } = await supabase
-      .from("contracts")
-      .insert(
-        contractToInsert({
-          unitId,
-          tenantId: contract.tenantId,
-          ownerId: unit.ownerId,
-          startDate: contract.startDate,
-          endDate: contract.endDate,
-          monthlyRent: contract.monthlyRent,
-          deposit: contract.deposit,
-          status: "active",
-          contractPhotoUrl: contract.contractPhotoUrl,
-        }),
-      )
-      .select()
-      .single();
-    if (cErr || !contractRow) return fail("Crear contrato", cErr);
+  const unit = get().units.find((u) => u.id === unitId);
+  if (!unit) return;
 
-    const { error: uErr } = await supabase
-      .from("units")
-      .update({ status: "rented", tenant_id: contract.tenantId ?? null })
-      .eq("id", unitId);
-    if (uErr) return fail("Marcar alquilada", uErr);
+  // Cerrar contratos activos anteriores directo en DB
+  await supabase
+    .from("contracts")
+    .update({ status: "ended" })
+    .eq("unit_id", unitId)
+    .eq("status", "active");
 
-    set((s) => ({
-      units: s.units.map((u) =>
-        u.id === unitId ? { ...u, status: "rented", tenantId: contract.tenantId } : u,
+  const { data: contractRow, error: cErr } = await supabase
+    .from("contracts")
+    .insert(
+      contractToInsert({
+        unitId,
+        tenantId: contract.tenantId,
+        ownerId: unit.ownerId,
+        startDate: contract.startDate,
+        endDate: contract.endDate,
+        monthlyRent: contract.monthlyRent,
+        deposit: contract.deposit,
+        status: "active",
+        contractPhotoUrl: contract.contractPhotoUrl,
+      }),
+    )
+    .select()
+    .single();
+  if (cErr || !contractRow) return fail("Crear contrato", cErr);
+
+  const { error: uErr } = await supabase
+    .from("units")
+    .update({ status: "rented", tenant_id: contract.tenantId ?? null })
+    .eq("id", unitId);
+  if (uErr) return fail("Marcar alquilada", uErr);
+
+  set((s) => ({
+    units: s.units.map((u) =>
+      u.id === unitId ? { ...u, status: "rented" as const, tenantId: contract.tenantId } : u,
+    ),
+    contracts: [
+      ...s.contracts.map((c) =>
+        c.unitId === unitId && c.status === "active" ? { ...c, status: "ended" as const } : c
       ),
-      contracts: [...s.contracts, rowToContract(contractRow)],
-    }));
-  },
+      rowToContract(contractRow),
+    ],
+  }));
+},
+
 
   markUnitAvailable: async (unitId) => {
     const active = get().contracts.find((c) => c.unitId === unitId && c.status === "active");

@@ -14,8 +14,8 @@ function Page() {
   const units = useAppStore((s) => s.units);
   const buildings = useAppStore((s) => s.buildings);
 
-  const tenantContracts = contracts.filter((c) => c.tenantId === user?.id);
-  const tenantPayments = payments.filter((p) => p.tenantId === user?.id);
+  const tenantContracts = contracts.filter((c) => c.tenantId === user?.id && c.status === "active");
+  const tenantPayments = payments.filter((p) => p.tenantId === user?.id );
   const pending = tenantPayments.filter((p) => p.status === "pending" || p.status === "overdue");
 
   return (

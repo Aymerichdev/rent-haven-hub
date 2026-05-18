@@ -42,7 +42,7 @@ function Page() {
   const user = useAppStore((s) => s.currentUser);
   const payments = useAppStore((s) => s.payments);
   const submitReceipt = useAppStore((s) => s.submitPaymentReceipt);
-  const tenantPayments = payments.filter((p) => p.tenantId === user?.id);
+  const tenantPayments = payments.filter((p) => p.tenantId === user?.id );
 
   const [activePayment, setActivePayment] = useState<Payment | null>(null);
   const [viewing, setViewing] = useState<Payment | null>(null);

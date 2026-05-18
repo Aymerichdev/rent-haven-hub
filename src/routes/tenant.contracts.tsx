@@ -12,7 +12,7 @@ function Page() {
   const contracts = useAppStore((s) => s.contracts);
   const units = useAppStore((s) => s.units);
   const buildings = useAppStore((s) => s.buildings);
-  const tenantContracts = contracts.filter((c) => c.tenantId === user?.id);
+  const tenantContracts = contracts.filter((c) => c.tenantId === user?.id && c.status === "active");
 
   return (
     <div className="space-y-6">

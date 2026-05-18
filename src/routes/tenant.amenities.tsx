@@ -34,7 +34,7 @@ function Page() {
   const myBookings = useAppStore((s) => s.bookings);
   const create = useAppStore((s) => s.createBooking);
 
-  const tenantContracts = contracts.filter((c) => c.tenantId === user?.id);
+  const tenantContracts = contracts.filter((c) => c.tenantId === user?.id && c.status === "active" );
   const tenantBookings = myBookings.filter((b) => b.tenantId === user?.id);
 
   const myBuildingIds = tenantContracts
