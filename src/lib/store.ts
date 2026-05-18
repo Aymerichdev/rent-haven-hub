@@ -384,12 +384,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
   completeOnboarding: async (data) => {
     const user = get().currentUser;
     if (!user || user.id !== data.userId) {
+      // eslint-disable-next-line no-console
+      console.error("[store] Completar perfil: sesión no lista", { currentUserId: user?.id, payloadUserId: data.userId });
       fail("Completar perfil", new Error("La sesión no está lista"));
       return false;
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {
+      // eslint-disable-next-line no-console
+      console.error("[store] Completar perfil: sesión no disponible tras getSession");
       fail("Completar perfil", new Error("Sesión no disponible"));
       return false;
     }
@@ -416,7 +420,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
             };
 
       const { error: metadataError } = await supabase.auth.updateUser({ data: sharedMetadata });
-      if (metadataError) throw metadataError;
+      if (metadataError) {
+        // eslint-disable-next-line no-console
+        console.error("[store] Completar perfil: auth.updateUser failed", metadataError);
+        throw metadataError;
+      }
 
       if (data.role === "tenant") {
         if (data.data.photoUrl) {

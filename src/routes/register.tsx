@@ -10,13 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@/lib/types";
 import {
   onboardingRoleDetails,
   validateAccountStep,
   validateOwnerStep,
   validateTenantStep,
-  type CompleteOnboardingInput,
   type FieldErrors,
   type OwnerOnboardingForm,
   type RegisterAccountForm,
@@ -73,7 +73,6 @@ const roleCards: Array<{
 
 function Page() {
   const register = useAppStore((s) => s.register);
-  const completeOnboarding = useAppStore((s) => s.completeOnboarding);
   const currentUser = useAppStore((s) => s.currentUser);
   const nav = useNavigate();
 
@@ -114,6 +113,12 @@ function Page() {
         return;
       }
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error("Sesión no disponible, inicia sesión de nuevo");
+        return;
+      }
+
       setCreatedUser(user);
       setStep(2);
       toast.success("Cuenta creada. Completa tu perfil para terminar el registro.");
@@ -145,30 +150,57 @@ function Page() {
       }
     }
 
-    const payload: CompleteOnboardingInput =
-      role === "tenant"
-        ? {
-            userId: createdUser.id,
-            phone: accountForm.phone,
-            role,
-            data: tenantForm,
-          }
-        : {
-            userId: createdUser.id,
-            phone: accountForm.phone,
-            role,
-            data: ownerForm,
-          };
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error("Sesión no disponible, inicia sesión de nuevo");
+      return;
+    }
 
     setFinishingProfile(true);
     try {
-      const ok = await completeOnboarding(payload);
-      if (!ok) {
-        return;
+      if (role === "tenant") {
+        const { error } = await supabase.from("tenant_profiles").upsert({
+          id: createdUser.id,
+          phone: accountForm.phone.trim(),
+          national_id: tenantForm.nationalId.trim(),
+          occupation: tenantForm.occupation.trim(),
+          bio: tenantForm.bio.trim() || null,
+          recommendations: tenantForm.recommendations.trim() || null,
+          profile_photo_url: tenantForm.photoUrl || "",
+          updated_at: new Date().toISOString(),
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("owner_profiles").upsert({
+          id: createdUser.id,
+          phone: accountForm.phone.trim(),
+          company_name: ownerForm.companyName.trim() || null,
+          tax_id: ownerForm.taxId.trim() || null,
+          bio: ownerForm.bio.trim() || null,
+          profile_photo_url: ownerForm.photoUrl || null,
+          updated_at: new Date().toISOString(),
+        });
+        if (error) throw error;
       }
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          role: accountForm.role,
+          name: accountForm.name,
+          avatar: role === "tenant" ? tenantForm.photoUrl || null : ownerForm.photoUrl || null,
+        })
+        .eq("id", createdUser.id);
+      if (profileError) throw profileError;
 
       toast.success("Perfil completado con éxito");
       nav({ to: role === "owner" ? "/owner" : "/tenant" });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("[register] submitProfile error", error);
+      toast.error("No se pudo completar el perfil");
     } finally {
       setFinishingProfile(false);
     }
