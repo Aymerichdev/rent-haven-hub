@@ -31,10 +31,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Pencil, Building2, KeyRound, DoorOpen, X } from "lucide-react";
+import { Plus, Trash2, Pencil, Building2, KeyRound, DoorOpen } from "lucide-react";
 import type { Unit } from "@/lib/types";
-import prop1 from "@/assets/prop1.jpg";
 import { toast } from "sonner";
+import { ImageUploader } from "@/components/site/ImageUploader";
 
 export const Route = createFileRoute("/owner/units")({
   component: Page,
