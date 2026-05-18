@@ -76,7 +76,7 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm(ownerBuildings[0]?.id ?? ""));
-  const fileRef = useRef<HTMLInputElement>(null);
+  
 
   const openCreate = () => {
     setEditingId(null);
