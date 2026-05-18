@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ImageUploader } from "@/components/site/ImageUploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -120,8 +121,13 @@ function Page() {
             <Field label="Teléfono" value={profile?.phone ?? ""} onChange={(value) => setProfile((s) => ({ ...(s ?? { id: currentUser?.id ?? "", phone: "", national_id: "", occupation: "", profile_photo_url: "" }), phone: value }))} />
             <Field label="Documento nacional" value={profile?.national_id ?? ""} onChange={(value) => setProfile((s) => ({ ...(s ?? { id: currentUser?.id ?? "", phone: "", national_id: "", occupation: "", profile_photo_url: "" }), national_id: value }))} />
             <Field label="Ocupación" value={profile?.occupation ?? ""} onChange={(value) => setProfile((s) => ({ ...(s ?? { id: currentUser?.id ?? "", phone: "", national_id: "", occupation: "", profile_photo_url: "" }), occupation: value }))} />
-            <Field label="Foto de perfil URL" value={profile?.profile_photo_url ?? ""} onChange={(value) => setProfile((s) => ({ ...(s ?? { id: currentUser?.id ?? "", phone: "", national_id: "", occupation: "", profile_photo_url: "" }), profile_photo_url: value }))} />
           </div>
+          <ImageUploader
+            folder={"profiles/" + currentUser?.id}
+            label="Foto de perfil"
+            value={profile?.profile_photo_url ?? ""}
+            onChange={(url) => setProfile((s) => ({ ...s!, profile_photo_url: url ?? "" }))}
+          />
           {profile?.profile_photo_url ? (
             <img
               src={profile.profile_photo_url}

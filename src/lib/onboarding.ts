@@ -83,7 +83,6 @@ export function validateTenantStep(form: TenantOnboardingForm): FieldErrors<keyo
   const errors: FieldErrors<keyof TenantOnboardingForm> = {};
   if (clean(form.nationalId).length < 4) errors.nationalId = "Ingresa tu documento o ID nacional.";
   if (clean(form.occupation).length < 2) errors.occupation = "Ingresa tu ocupación.";
-  if (!clean(form.photoUrl)) errors.photoUrl = "Sube al menos una foto de perfil.";
   return errors;
 }
 
