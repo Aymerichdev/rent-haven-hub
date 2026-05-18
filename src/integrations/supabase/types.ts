@@ -343,6 +343,91 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          id: string
+          national_id: string
+          occupation: string
+          phone: string
+          profile_photo_url: string
+          recommendations: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          id: string
+          national_id: string
+          occupation: string
+          phone: string
+          profile_photo_url: string
+          recommendations?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          id?: string
+          national_id?: string
+          occupation?: string
+          phone?: string
+          profile_photo_url?: string
+          recommendations?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owner_profiles: {
+        Row: {
+          bio: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          phone: string
+          profile_photo_url: string | null
+          tax_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string
+          id: string
+          phone: string
+          profile_photo_url?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          phone?: string
+          profile_photo_url?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rental_requests: {
         Row: {
           created_at: string

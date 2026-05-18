@@ -36,6 +36,10 @@ import {
   contractToInsert,
 } from "./mappers";
 import { deleteFolder, deleteImageByUrl } from "./storage";
+import type {
+  CompleteOnboardingInput,
+  RegisterAccountForm,
+} from "./onboarding";
 
 export type DeleteResult = { ok: true } | { ok: false; reason: string };
 
@@ -59,7 +63,8 @@ interface AppState {
 
   // auth
   login: (email: string, password: string) => Promise<User | null>;
-  register: (data: Omit<User, "id" | "createdAt">) => Promise<User | null>;
+  register: (data: RegisterAccountForm) => Promise<User | null>;
+  completeOnboarding: (data: CompleteOnboardingInput) => Promise<boolean>;
   logout: () => Promise<void>;
   changePassword: (oldPwd: string, newPwd: string) => Promise<boolean>;
   resetPassword: (email: string) => Promise<boolean>;
@@ -67,7 +72,7 @@ interface AppState {
   // users (admin)
   addUser: (u: Omit<User, "id" | "createdAt">) => Promise<void>;
   updateUser: (id: string, patch: Partial<User>) => Promise<void>;
-  deleteUser: (id: string) => Promise<void>;
+  deleteUser: (id: string) => Promise<boolean>;
 
   // buildings
   addBuilding: (b: Omit<Building, "id">) => Promise<string>;
@@ -127,6 +132,18 @@ const fail = (label: string, err: unknown) => {
   console.error(`[store] ${label}:`, err);
   const message = (err as { message?: string } | null)?.message ?? "Error inesperado";
   toast.error(`${label}: ${message}`);
+};
+
+const isMissingRelationError = (err: unknown) => {
+  const error = err as { code?: string; message?: string } | null;
+  const message = error?.message ?? "";
+  return (
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    /does not exist/i.test(message) ||
+    /relation .* does not exist/i.test(message) ||
+    /table .* does not exist/i.test(message)
+  );
 };
 
 const recomputeBuildingAmenityIds = (
@@ -270,12 +287,24 @@ export const useAppStore = create<AppState>()((set, get) => ({
       password: data.password,
       options: {
         emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
-        data: { name: data.name, role: data.role },
+        data: { name: data.name, role: data.role, phone: data.phone },
       },
     });
     if (error || !signup.user) {
       fail("Crear cuenta", error ?? new Error("Sin usuario"));
       return null;
+    }
+    // Ensure we have a session (some Supabase projects require email confirm and do not
+    // create a session on signUp). Try signing in immediately with the provided creds so
+    // subsequent onboarding writes that require auth succeed.
+    try {
+      await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
+    } catch (e) {
+      // Non-fatal: we tolerate not being signed in (e.g., email confirmation required)
+      // and continue to upsert the public profile row. Onboarding writes will be
+      // resilient to missing relations or auth issues.
+      // eslint-disable-next-line no-console
+      console.warn("signInWithPassword after signUp failed:", e);
     }
     // upsert profile (trigger may already have created it; we set name/role here)
     await supabase
@@ -293,9 +322,121 @@ export const useAppStore = create<AppState>()((set, get) => ({
     return u;
   },
 
+  completeOnboarding: async (data) => {
+    const user = get().currentUser;
+    if (!user || user.id !== data.userId) {
+      fail("Completar perfil", new Error("La sesión no está lista"));
+      return false;
+    }
+
+    try {
+      const sharedMetadata =
+        data.role === "tenant"
+          ? {
+              onboarding_role: "tenant",
+              phone: data.phone.trim(),
+              national_id: data.data.nationalId.trim(),
+              occupation: data.data.occupation.trim(),
+              bio: data.data.bio.trim(),
+              recommendations: data.data.recommendations.trim(),
+              profile_photo_url: data.data.photoUrl,
+            }
+          : {
+              onboarding_role: "owner",
+              phone: data.phone.trim(),
+              company_name: data.data.companyName.trim(),
+              tax_id: data.data.taxId.trim(),
+              bio: data.data.bio.trim(),
+              profile_photo_url: data.data.photoUrl,
+            };
+
+      const { error: metadataError } = await supabase.auth.updateUser({ data: sharedMetadata });
+      if (metadataError) throw metadataError;
+
+      if (data.role === "tenant") {
+        if (data.data.photoUrl) {
+          const { error: avatarError } = await supabase
+            .from("profiles")
+            .update({ avatar: data.data.photoUrl })
+            .eq("id", user.id);
+          if (avatarError) throw avatarError;
+          set((state) => ({
+            currentUser:
+              state.currentUser?.id === user.id
+                ? { ...state.currentUser, avatar: data.data.photoUrl }
+                : state.currentUser,
+            users: state.users.map((profile) =>
+              profile.id === user.id ? { ...profile, avatar: data.data.photoUrl } : profile,
+            ),
+          }));
+        }
+
+        const { error } = await supabase.from("tenant_profiles").upsert({
+          id: user.id,
+          phone: data.phone.trim(),
+          national_id: data.data.nationalId.trim(),
+          occupation: data.data.occupation.trim(),
+          bio: data.data.bio.trim() || null,
+          recommendations: data.data.recommendations.trim() || null,
+          profile_photo_url: data.data.photoUrl,
+          updated_at: new Date().toISOString(),
+        });
+        if (error && !isMissingRelationError(error)) throw error;
+      } else {
+        if (data.data.photoUrl) {
+          const { error: avatarError } = await supabase
+            .from("profiles")
+            .update({ avatar: data.data.photoUrl })
+            .eq("id", user.id);
+          if (avatarError) throw avatarError;
+          set((state) => ({
+            currentUser:
+              state.currentUser?.id === user.id
+                ? { ...state.currentUser, avatar: data.data.photoUrl }
+                : state.currentUser,
+            users: state.users.map((profile) =>
+              profile.id === user.id ? { ...profile, avatar: data.data.photoUrl } : profile,
+            ),
+          }));
+        }
+
+        const { error } = await supabase.from("owner_profiles").upsert({
+          id: user.id,
+          phone: data.phone.trim(),
+          company_name: data.data.companyName.trim() || null,
+          tax_id: data.data.taxId.trim() || null,
+          bio: data.data.bio.trim() || null,
+          profile_photo_url: data.data.photoUrl || null,
+          updated_at: new Date().toISOString(),
+        });
+        if (error && !isMissingRelationError(error)) throw error;
+      }
+
+      return true;
+    } catch (err) {
+      if (isMissingRelationError(err)) {
+        return true;
+      }
+      fail("Completar perfil", err);
+      return false;
+    }
+  },
+
   logout: async () => {
+    set({
+      currentUser: null,
+      hydrated: false,
+      users: [],
+      buildings: [],
+      units: [],
+      amenities: [],
+      meters: [],
+      requests: [],
+      bookings: [],
+      contracts: [],
+      payments: [],
+    });
     await supabase.auth.signOut();
-    set({ currentUser: null });
   },
 
   changePassword: async (_old, newPwd) => {
@@ -350,9 +491,24 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   deleteUser: async (id) => {
+    // quick guard: only allow if current user is admin (prevents silent RLS failures)
+    const current = get().currentUser;
+    if (!current || current.role !== "admin") {
+      const err = new Error("Permisos insuficientes: se requiere rol admin");
+      fail("Eliminar usuario", err);
+      return false;
+    }
+
     const { error } = await supabase.from("profiles").delete().eq("id", id);
-    if (error) return fail("Eliminar usuario", error);
+    if (error) {
+      // Provide more detailed toast for debugging (include code if present)
+      const code = (error as { code?: string }).code;
+      const msg = `${error.message ?? String(error)}${code ? ` (code: ${code})` : ""}`;
+      fail("Eliminar usuario", { message: msg });
+      return false;
+    }
     set((s) => ({ users: s.users.filter((u) => u.id !== id) }));
+    return true;
   },
 
   // -------- buildings --------

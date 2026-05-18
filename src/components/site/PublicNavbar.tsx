@@ -97,8 +97,8 @@ export function PublicNavbar() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => {
-                    logout();
+                  onClick={async () => {
+                    await logout();
                     nav({ to: "/" });
                   }}
                 >

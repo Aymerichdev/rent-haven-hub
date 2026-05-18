@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { useAppStore } from "@/lib/store";
+import { closeSupabaseClient } from "@/integrations/supabase/client";
 
 import appCss from "../styles.css?url";
 
@@ -72,6 +73,17 @@ function RootComponent() {
   useEffect(() => {
     init();
   }, [init]);
+  useEffect(() => {
+    const onUnload = () => {
+      try {
+        closeSupabaseClient();
+      } catch (e) {
+        // ignore
+      }
+    };
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, []);
   return (
     <>
       <Outlet />

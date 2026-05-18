@@ -38,3 +38,19 @@ export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>,
   },
 });
 
+// Best-effort cleanup for client-side Supabase resources (realtime sockets, listeners)
+export function closeSupabaseClient() {
+  try {
+    if (!_supabase) return;
+    // Try common cleanup methods used by supabase-js internals
+    const maybeAny = _supabase as any;
+    try { maybeAny.removeAllChannels?.(); } catch {}
+    try { maybeAny.realtime?.disconnect?.(); } catch {}
+    try { maybeAny.realtime?.close?.(); } catch {}
+    try { maybeAny.removeAllSubscriptions?.(); } catch {}
+  } finally {
+    // clear reference so new client can be created later if needed
+    _supabase = undefined;
+  }
+}
+

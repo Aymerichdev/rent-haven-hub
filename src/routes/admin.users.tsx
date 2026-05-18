@@ -174,9 +174,13 @@ function Page() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={() => {
-                      deleteUser(u.id);
-                      toast.success("Usuario eliminado");
+                    onClick={async () => {
+                      const ok = await deleteUser(u.id);
+                      if (ok) {
+                        toast.success("Usuario eliminado");
+                      } else {
+                        toast.error("No se pudo eliminar el usuario. Revisa la consola para más detalles.");
+                      }
                     }}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />

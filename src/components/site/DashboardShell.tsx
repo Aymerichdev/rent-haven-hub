@@ -86,8 +86,8 @@ export function DashboardShell({ brand, brandTag, items, children }: Props) {
               variant="outline"
               size="sm"
               className="mt-3 w-full"
-              onClick={() => {
-                logout();
+              onClick={async () => {
+                await logout();
                 nav({ to: "/" });
               }}
             >
@@ -108,8 +108,8 @@ export function DashboardShell({ brand, brandTag, items, children }: Props) {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               nav({ to: "/" });
             }}
           >
