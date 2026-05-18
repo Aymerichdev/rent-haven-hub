@@ -352,6 +352,20 @@ function Page() {
                     Destacar en página principal
                   </Label>
                 </div>
+                <div className="sm:col-span-2">
+                  <Label>Imágenes *</Label>
+                  <ImageUploader
+                    multiple
+                    folder={`units/${editing?.id ?? "new"}`}
+                    value={form.images}
+                    onChange={(urls) => setForm({ ...form, images: urls })}
+                  />
+                  {form.images.length === 0 && (
+                    <p className="mt-1 text-xs text-destructive">
+                      Debes subir al menos una imagen
+                    </p>
+                  )}
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>
