@@ -99,14 +99,6 @@ function Page() {
     setOpen(true);
   };
 
-  const onFile = (file: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return toast.error("Selecciona una imagen");
-    if (file.size > 5 * 1024 * 1024) return toast.error("Imagen demasiado grande (máx 5MB)");
-    const reader = new FileReader();
-    reader.onload = () => setForm((f) => ({ ...f, photoUrl: String(reader.result) }));
-    reader.readAsDataURL(file);
-  };
 
   const toggleDay = (d: WeekDay) =>
     setForm((f) => ({
