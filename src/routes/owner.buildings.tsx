@@ -159,16 +159,18 @@ function Page() {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <Label>Imágenes (una URL por línea)</Label>
-                  <Textarea
-                    value={imagesText}
-                    onChange={(e) => setImagesText(e.target.value)}
-                    placeholder="https://..."
-                    className="font-mono text-xs"
+                  <Label>Imágenes *</Label>
+                  <ImageUploader
+                    multiple
+                    folder={`buildings/${editing?.id ?? "new"}`}
+                    value={form.images}
+                    onChange={(urls) => setForm({ ...form, images: urls })}
                   />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Si lo dejas vacío usaremos una imagen por defecto.
-                  </p>
+                  {form.images.length === 0 && (
+                    <p className="mt-1 text-xs text-destructive">
+                      Debes subir al menos una imagen
+                    </p>
+                  )}
                 </div>
               </div>
 
