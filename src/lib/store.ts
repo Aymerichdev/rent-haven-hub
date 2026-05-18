@@ -332,7 +332,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   updateUser: async (id, patch) => {
-    const update: Record<string, unknown> = {};
+    const update: Database["public"]["Tables"]["profiles"]["Update"] = {};
     if (patch.name !== undefined) update.name = patch.name;
     if (patch.email !== undefined) update.email = patch.email;
     if (patch.role !== undefined) update.role = patch.role;
