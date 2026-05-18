@@ -559,28 +559,11 @@ function Page() {
 
             <section className="space-y-2">
               <h3 className="font-display text-sm font-bold">Foto del contrato (opcional)</h3>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => onPhotoChange(e.target.files?.[0])}
+              <ImageUploader
+                folder={`contracts/${rentUnit?.id ?? "new"}`}
+                value={rentPhoto || undefined}
+                onChange={(url) => setRentPhoto(url ?? "")}
               />
-              {rentPhoto && (
-                <div className="space-y-2">
-                  <img
-                    src={rentPhoto}
-                    alt="Contrato"
-                    className="max-w-[200px] rounded-lg border border-border"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setRentPhoto("")}
-                  >
-                    <X className="mr-1 h-3.5 w-3.5" /> Eliminar foto
-                  </Button>
-                </div>
-              )}
             </section>
           </div>
           <DialogFooter>
