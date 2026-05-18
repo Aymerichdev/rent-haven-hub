@@ -322,6 +322,26 @@ export const useAppStore = create<AppState>()((set, get) => ({
       },
     });
     if (error || !signup.user) {
+      const message = (error as { message?: string } | null)?.message ?? "";
+      if (/already registered/i.test(message)) {
+        const { data: signIn, error: signInError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+        if (signInError || !signIn.user) {
+          fail("Crear cuenta", signInError ?? new Error("Sin usuario"));
+          return null;
+        }
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", signIn.user.id)
+          .maybeSingle();
+        if (!profile) return null;
+        const u = rowToUser(profile);
+        set({ currentUser: u });
+        return u;
+      }
       fail("Crear cuenta", error ?? new Error("Sin usuario"));
       return null;
     }
@@ -329,13 +349,22 @@ export const useAppStore = create<AppState>()((set, get) => ({
     // create a session on signUp). Try signing in immediately with the provided creds so
     // subsequent onboarding writes that require auth succeed.
     try {
-      await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      if (signInError) {
+        fail("Crear cuenta", signInError);
+        return null;
+      }
     } catch (e) {
-      // Non-fatal: we tolerate not being signed in (e.g., email confirmation required)
-      // and continue to upsert the public profile row. Onboarding writes will be
-      // resilient to missing relations or auth issues.
-      // eslint-disable-next-line no-console
-      console.warn("signInWithPassword after signUp failed:", e);
+      fail("Crear cuenta", e);
+      return null;
+    }
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      fail("Crear cuenta", new Error("Sesión no disponible"));
+      return null;
     }
     // upsert profile (trigger may already have created it; we set name/role here)
     await supabase
@@ -356,6 +385,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const user = get().currentUser;
     if (!user || user.id !== data.userId) {
       fail("Completar perfil", new Error("La sesión no está lista"));
+      return false;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      fail("Completar perfil", new Error("Sesión no disponible"));
       return false;
     }
 
