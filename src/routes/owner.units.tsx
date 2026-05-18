@@ -72,18 +72,11 @@ function Page() {
     setRentPhoto("");
   };
 
-  const onPhotoChange = (file: File | undefined) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setRentPhoto(String(reader.result));
-    reader.readAsDataURL(file);
-  };
-
-  const confirmRent = () => {
+  const confirmRent = async () => {
     if (!rentUnit) return;
     if (!rentStart || !rentEnd) return toast.error("Inicio y fin son obligatorios");
     if (rentEnd <= rentStart) return toast.error("La fecha de fin debe ser posterior al inicio");
-    markRented(rentUnit.id, {
+    await markRented(rentUnit.id, {
       tenantId: rentTenant || undefined,
       startDate: rentStart,
       endDate: rentEnd,
