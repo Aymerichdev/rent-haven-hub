@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Pencil, Upload, Users } from "lucide-react";
+import { Plus, Trash2, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { Amenity, AmenitySchedule, WeekDay } from "@/lib/types";
 import { WEEK_DAYS, scheduleSummary } from "@/lib/amenity-utils";
