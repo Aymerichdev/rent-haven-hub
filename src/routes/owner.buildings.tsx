@@ -313,8 +313,8 @@ function Page() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => {
-                        const r = del(b.id);
+                      onClick={async () => {
+                        const r = await del(b.id);
                         if (!r.ok) toast.error(r.reason);
                         else toast.success("Edificio eliminado");
                       }}
