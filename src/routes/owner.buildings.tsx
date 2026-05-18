@@ -18,7 +18,7 @@ import {
 import { Plus, Trash2, Pencil, DoorOpen, X, ArrowRight } from "lucide-react";
 import type { Building, Amenity } from "@/lib/types";
 import { toast } from "sonner";
-import prop1 from "@/assets/prop1.jpg";
+import { ImageUploader } from "@/components/site/ImageUploader";
 
 type AmenityDraft = { name: string; icon: string; bookable: boolean };
 
