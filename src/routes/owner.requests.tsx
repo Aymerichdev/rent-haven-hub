@@ -94,6 +94,9 @@ function Page() {
                       />
                     )}
                     <div className="min-w-0 flex-1">
+                      {r.profilePhotoUrl ? (
+                        <img src={r.profilePhotoUrl} alt="" className="mb-2 h-12 w-12 rounded-full object-cover" />
+                      ) : null}
                       <div className="font-medium">{u?.title}</div>
                       <div className="text-xs text-muted-foreground">
                         {tenant?.name} · {r.createdAt}
@@ -109,6 +112,12 @@ function Page() {
                       <p className="mt-2 line-clamp-2 rounded-md bg-secondary/50 p-2 text-sm">
                         {r.message}
                       </p>
+                      <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        {r.nationalId ? <p><span className="font-medium text-foreground">Cédula:</span> {r.nationalId}</p> : null}
+                        {r.occupation ? <p><span className="font-medium text-foreground">Ocupación:</span> {r.occupation}</p> : null}
+                        {r.bio ? <p><span className="font-medium text-foreground">Bio:</span> {r.bio}</p> : null}
+                        {r.recommendations ? <p><span className="font-medium text-foreground">Recomendaciones:</span> {r.recommendations}</p> : null}
+                      </div>
                       {r.ownerResponse && (
                         <p className="mt-2 inline-flex items-start gap-1 rounded-md border border-primary/20 bg-primary/5 p-2 text-xs text-foreground">
                           <MessageSquare className="mt-0.5 h-3 w-3 shrink-0 text-primary" />

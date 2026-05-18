@@ -384,12 +384,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
   completeOnboarding: async (data) => {
     const user = get().currentUser;
     if (!user || user.id !== data.userId) {
+      // eslint-disable-next-line no-console
+      console.error("[store] Completar perfil: sesión no lista", { currentUserId: user?.id, payloadUserId: data.userId });
       fail("Completar perfil", new Error("La sesión no está lista"));
       return false;
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {
+      // eslint-disable-next-line no-console
+      console.error("[store] Completar perfil: sesión no disponible tras getSession");
       fail("Completar perfil", new Error("Sesión no disponible"));
       return false;
     }
@@ -416,7 +420,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
             };
 
       const { error: metadataError } = await supabase.auth.updateUser({ data: sharedMetadata });
-      if (metadataError) throw metadataError;
+      if (metadataError) {
+        // eslint-disable-next-line no-console
+        console.error("[store] Completar perfil: auth.updateUser failed", metadataError);
+        throw metadataError;
+      }
 
       if (data.role === "tenant") {
         if (data.data.photoUrl) {
@@ -882,9 +890,29 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   // -------- requests --------
   createRentalRequest: async (r) => {
+    const { data: tenantProfile, error: tenantProfileError } = await supabase
+      .from("tenant_profiles")
+      .select("*")
+      .eq("id", r.tenantId)
+      .maybeSingle();
+    if (tenantProfileError) return fail("Enviar solicitud", tenantProfileError);
+
+    if (!tenantProfile || !tenantProfile.phone?.trim() || !tenantProfile.national_id?.trim() || !tenantProfile.occupation?.trim()) {
+      throw new Error("Completa tu perfil antes de enviar solicitudes");
+    }
+
     const { data, error } = await supabase
       .from("rental_requests")
-      .insert(requestToInsert(r))
+      .insert({
+        ...requestToInsert(r),
+        phone: tenantProfile.phone,
+        national_id: tenantProfile.national_id,
+        occupation: tenantProfile.occupation,
+        bio: tenantProfile.bio ?? null,
+        recommendations: tenantProfile.recommendations ?? null,
+        profile_photo_url: tenantProfile.profile_photo_url ?? null,
+        status: "pending",
+      } as never)
       .select()
       .single();
     if (error || !data) return fail("Enviar solicitud", error);
