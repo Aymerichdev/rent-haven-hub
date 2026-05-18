@@ -18,7 +18,7 @@ import {
 import { Plus, Trash2, Pencil, DoorOpen, X, ArrowRight } from "lucide-react";
 import type { Building, Amenity } from "@/lib/types";
 import { toast } from "sonner";
-import prop1 from "@/assets/prop1.jpg";
+import { ImageUploader } from "@/components/site/ImageUploader";
 
 type AmenityDraft = { name: string; icon: string; bookable: boolean };
 
@@ -49,7 +49,7 @@ function Page() {
     ownerId: user?.id ?? "",
     amenityIds: [],
     description: "",
-    images: [prop1],
+    images: [],
   });
 
   const [open, setOpen] = useState(false);
@@ -61,13 +61,11 @@ function Page() {
     icon: "🏊",
     bookable: true,
   });
-  const [imagesText, setImagesText] = useState<string>("");
 
   const startNew = () => {
     setEditing(null);
     setForm(buildEmpty());
     setAmenityDrafts([]);
-    setImagesText("");
     setOpen(true);
   };
 
@@ -83,35 +81,29 @@ function Page() {
       images: b.images,
     });
     setAmenityDrafts([]);
-    setImagesText(b.images.join("\n"));
     setOpen(true);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!form.name || !form.city) return toast.error("Completa nombre y ciudad");
-
-    const images = imagesText
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const finalImages = images.length > 0 ? images : [prop1];
+    if (form.images.length === 0) return toast.error("Debes subir al menos una imagen");
 
     if (editing) {
-      upd(editing.id, { ...form, images: finalImages });
-      // amenidades nuevas añadidas durante edición
-      amenityDrafts.forEach((a) => addAmenity({ ...a, buildingId: editing.id }));
+      await upd(editing.id, form);
+      for (const a of amenityDrafts) await addAmenity({ ...a, buildingId: editing.id });
       toast.success("Edificio actualizado");
     } else {
-      // crear edificio con id temporal pendiente — usamos addBuilding y luego buscamos por nombre/ts
-      // Workaround: generamos el id derivando del último insert (store usa uid interno).
-      // Para simplificar, creamos building primero y dejamos amenidades inline a "agregar luego".
-      const newId = add({ ...form, images: finalImages });
-      amenityDrafts.forEach((a) => addAmenity({ ...a, buildingId: newId }));
-      toast.success(
-        amenityDrafts.length > 0
-          ? `Edificio creado con ${amenityDrafts.length} amenidad(es)`
-          : "Edificio creado",
-      );
+      try {
+        const newId = await add(form);
+        for (const a of amenityDrafts) await addAmenity({ ...a, buildingId: newId });
+        toast.success(
+          amenityDrafts.length > 0
+            ? `Edificio creado con ${amenityDrafts.length} amenidad(es)`
+            : "Edificio creado",
+        );
+      } catch {
+        return;
+      }
     }
     setOpen(false);
   };
