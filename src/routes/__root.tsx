@@ -68,6 +68,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const init = useAppStore((s) => s.init);
+  useEffect(() => {
+    init();
+  }, [init]);
   return (
     <>
       <Outlet />
