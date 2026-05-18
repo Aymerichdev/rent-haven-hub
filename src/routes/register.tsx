@@ -29,9 +29,13 @@ function Page() {
     role: "tenant" as "tenant" | "owner",
   });
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const u = register(form);
+    const u = await register(form);
+    if (!u) {
+      toast.error("No se pudo crear la cuenta");
+      return;
+    }
     toast.success(`Cuenta creada, bienvenido ${u.name}`);
     nav({ to: u.role === "owner" ? "/owner" : "/tenant" });
   };

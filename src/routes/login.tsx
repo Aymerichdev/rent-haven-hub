@@ -18,9 +18,9 @@ function Page() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const u = login(email, password);
+    const u = await login(email, password);
     if (!u) {
       toast.error("Credenciales inválidas");
       return;

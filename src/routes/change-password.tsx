@@ -22,14 +22,15 @@ function Page() {
     if (!user) nav({ to: "/login" });
   }, [user, nav]);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (change(oldPwd, newPwd)) {
+    const ok = await change(oldPwd, newPwd);
+    if (ok) {
       toast.success("Contraseña actualizada");
       setOld("");
       setNew("");
     } else {
-      toast.error("Contraseña actual incorrecta");
+      toast.error("No se pudo actualizar la contraseña");
     }
   };
 

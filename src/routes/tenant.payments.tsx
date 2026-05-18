@@ -48,7 +48,7 @@ function Page() {
   const [viewing, setViewing] = useState<Payment | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     if (!activePayment) return;
     if (!ACCEPTED.includes(file.type)) {
       toast.error("Formato no permitido. Usa JPG, PNG, WEBP o PDF.");
@@ -58,18 +58,13 @@ function Page() {
       toast.error("El archivo supera los 5MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      submitReceipt(activePayment.id, {
-        dataUrl: String(reader.result),
-        name: file.name,
-        type: file.type,
-      });
+    try {
+      await submitReceipt(activePayment.id, file);
       toast.success("Comprobante enviado, en verificación");
       setActivePayment(null);
-    };
-    reader.onerror = () => toast.error("No se pudo leer el archivo");
-    reader.readAsDataURL(file);
+    } catch {
+      toast.error("No se pudo subir el comprobante");
+    }
   };
 
   return (

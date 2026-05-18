@@ -16,14 +16,14 @@ function Page() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = reset(email);
+    const ok = await reset(email);
     if (ok) {
       setSent(true);
-      toast.success("Te enviamos un enlace de recuperación (simulado)");
+      toast.success("Te enviamos un enlace de recuperación");
     } else {
-      toast.error("No encontramos esa cuenta");
+      toast.error("No se pudo enviar el enlace");
     }
   };
 
