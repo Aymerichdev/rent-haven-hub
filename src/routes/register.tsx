@@ -248,7 +248,7 @@ function Page() {
 
               <div className="rounded-2xl border border-dashed border-border/80 bg-secondary/35 p-4 text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">{roleDetails.tagline}</p>
-                <p className="mt-1">{role === "tenant" ? "Incluye tu foto de perfil para cumplir el requisito mínimo de registro." : "Tu foto es opcional, pero útil para dar confianza desde el primer contacto."}</p>
+                <p className="mt-1">Tu foto es opcional, pero útil para dar confianza desde el primer contacto.</p>
               </div>
             </CardContent>
           </Card>
@@ -329,7 +329,7 @@ function Page() {
                         {onboardingRoleDetails[role].title}
                       </Badge>
                       <Badge variant="outline" className="rounded-full px-3 py-1">
-                        {role === "tenant" ? "Foto requerida" : "Foto opcional"}
+                        Foto opcional
                       </Badge>
                     </div>
                     <p className="mt-3 text-sm text-muted-foreground">
@@ -479,20 +479,18 @@ function Page() {
                       <div>
                         <h3 className="text-base font-semibold">Foto de perfil</h3>
                         <p className="text-sm text-muted-foreground">
-                          {role === "tenant"
-                            ? "Obligatoria para completar el registro como inquilino."
-                            : "Opcional, pero recomendada para perfiles de propietario."}
+                          Opcional para completar el registro.
                         </p>
                       </div>
-                      <Badge variant={role === "tenant" ? "default" : "outline"} className="rounded-full px-3 py-1">
-                        {role === "tenant" ? "Requerida" : "Opcional"}
+                      <Badge variant="outline" className="rounded-full px-3 py-1">
+                        Opcional
                       </Badge>
                     </div>
 
                     {createdUser ? (
                       <ImageUploader
-                        folder={createdUser.id}
-                        label={role === "tenant" ? "Sube tu foto" : "Sube una foto de perfil"}
+                        folder={"profiles/" + createdUser.id}
+                        label="Foto de perfil"
                         value={role === "tenant" ? tenantForm.photoUrl : ownerForm.photoUrl}
                         onChange={(url) =>
                           role === "tenant"
