@@ -1,8 +1,8 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
-import { useAppStore } from "@/lib/store";
-import { closeSupabaseClient } from "@/integrations/supabase/client";
+import { cleanupAuthSubscription, useAppStore } from "@/lib/store";
+import { closeSupabaseClient, supabase } from "@/integrations/supabase/client";
 
 import appCss from "../styles.css?url";
 
@@ -70,12 +70,18 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const init = useAppStore((s) => s.init);
+  const hydrate = useAppStore((s) => s.hydrate);
+  const logout = useAppStore((s) => s.logout);
   useEffect(() => {
     init();
+    return () => {
+      cleanupAuthSubscription();
+    };
   }, [init]);
   useEffect(() => {
     const onUnload = () => {
       try {
+        cleanupAuthSubscription();
         closeSupabaseClient();
       } catch (e) {
         // ignore
@@ -84,6 +90,20 @@ function RootComponent() {
     window.addEventListener("beforeunload", onUnload);
     return () => window.removeEventListener("beforeunload", onUnload);
   }, []);
+  useEffect(() => {
+    const onVisibilityChange = async () => {
+      if (document.visibilityState !== "visible") return;
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        await hydrate();
+      } else {
+        await logout();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [hydrate, logout]);
   return (
     <>
       <Outlet />

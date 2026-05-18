@@ -42,10 +42,13 @@ import type {
 } from "./onboarding";
 
 export type DeleteResult = { ok: true } | { ok: false; reason: string };
+export type TenantProfileRow = Database["public"]["Tables"]["tenant_profiles"]["Row"];
+export type OwnerProfileRow = Database["public"]["Tables"]["owner_profiles"]["Row"];
 
 interface AppState {
   currentUser: User | null;
   hydrated: boolean;
+  _hydrating: boolean;
 
   users: User[];
   buildings: Building[];
@@ -73,6 +76,8 @@ interface AppState {
   addUser: (u: Omit<User, "id" | "createdAt">) => Promise<void>;
   updateUser: (id: string, patch: Partial<User>) => Promise<void>;
   deleteUser: (id: string) => Promise<boolean>;
+  updateTenantProfile: (data: Partial<TenantProfileRow>) => Promise<boolean>;
+  updateOwnerProfile: (data: Partial<OwnerProfileRow>) => Promise<boolean>;
 
   // buildings
   addBuilding: (b: Omit<Building, "id">) => Promise<string>;
@@ -158,10 +163,16 @@ const recomputeBuildingAmenityIds = (
   }
   return buildings.map((b) => ({ ...b, amenityIds: map.get(b.id) ?? [] }));
 };
+let _authSubscription: { unsubscribe: () => void } | null = null;
 
+export function cleanupAuthSubscription() {
+  _authSubscription?.unsubscribe();
+  _authSubscription = null;
+}
 export const useAppStore = create<AppState>()((set, get) => ({
   currentUser: null,
   hydrated: false,
+  _hydrating: false,
   users: [],
   buildings: [],
   units: [],
@@ -172,8 +183,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
   contracts: [],
   payments: [],
 
+
+
   // -------- bootstrap --------
   init: async () => {
+    cleanupAuthSubscription();
     const { data: sess } = await supabase.auth.getSession();
     if (sess.session?.user) {
       const { data: profile } = await supabase
@@ -183,11 +197,24 @@ export const useAppStore = create<AppState>()((set, get) => ({
         .maybeSingle();
       if (profile) set({ currentUser: rowToUser(profile) });
     }
-    supabase.auth.onAuthStateChange(async (_e, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_e, session) => {
+      if (_e === "TOKEN_REFRESHED") {
+        return;
+      }
+
+      if (
+        _e === "SIGNED_IN" &&
+        get().hydrated &&
+        get().currentUser?.id === session?.user?.id
+      ) {
+        return;
+      }
+
       if (!session?.user) {
         set({
           currentUser: null,
           hydrated: false,
+          _hydrating: false,
           buildings: [],
           units: [],
           amenities: [],
@@ -211,10 +238,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
         get().hydrate();
       }
     });
+    _authSubscription = subscription;
     if (get().currentUser) await get().hydrate();
   },
 
   hydrate: async () => {
+    if (get()._hydrating) return;
+    set({ _hydrating: true });
     try {
       const [
         profilesRes,
@@ -259,6 +289,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
       });
     } catch (err) {
       fail("Cargar datos", err);
+    } finally {
+      set({ _hydrating: false });
     }
   },
 
@@ -277,7 +309,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
     if (!profile) return null;
     const u = rowToUser(profile);
     set({ currentUser: u });
-    await get().hydrate();
     return u;
   },
 
@@ -318,7 +349,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
     if (!profile) return null;
     const u = rowToUser(profile);
     set({ currentUser: u });
-    await get().hydrate();
     return u;
   },
 
@@ -414,6 +444,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
       return true;
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[store] Completar perfil:", err);
       if (isMissingRelationError(err)) {
         return true;
       }
@@ -470,7 +502,36 @@ export const useAppStore = create<AppState>()((set, get) => ({
     await supabase
       .from("profiles")
       .upsert({ id: data.user.id, email: u.email, name: u.name, role: u.role });
-    await get().hydrate();
+    if (u.role === "tenant") {
+      try {
+        await supabase.from("tenant_profiles").upsert({
+          id: data.user.id,
+          phone: "",
+          national_id: "",
+          occupation: "",
+          profile_photo_url: "",
+        });
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[store] Crear perfil tenant:", err);
+      }
+    }
+    if (u.role === "owner") {
+      try {
+        await supabase.from("owner_profiles").upsert({
+          id: data.user.id,
+          phone: "",
+        });
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[store] Crear perfil owner:", err);
+      }
+    }
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("*");
+    if (profilesError) return fail("Cargar usuarios", profilesError);
+    set({ users: (profiles ?? []).map(rowToUser) });
   },
 
   updateUser: async (id, patch) => {
@@ -508,6 +569,47 @@ export const useAppStore = create<AppState>()((set, get) => ({
       return false;
     }
     set((s) => ({ users: s.users.filter((u) => u.id !== id) }));
+    return true;
+  },
+
+  updateTenantProfile: async (data) => {
+    const current = get().currentUser;
+    if (!current) return false;
+    const payload: Database["public"]["Tables"]["tenant_profiles"]["Insert"] = {
+      id: current.id,
+      phone: data.phone ?? "",
+      national_id: data.national_id ?? "",
+      occupation: data.occupation ?? "",
+      profile_photo_url: data.profile_photo_url ?? "",
+      bio: data.bio ?? null,
+      recommendations: data.recommendations ?? null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from("tenant_profiles").upsert(payload);
+    if (error) {
+      fail("Actualizar perfil", error);
+      return false;
+    }
+    return true;
+  },
+
+  updateOwnerProfile: async (data) => {
+    const current = get().currentUser;
+    if (!current) return false;
+    const payload: Database["public"]["Tables"]["owner_profiles"]["Insert"] = {
+      id: current.id,
+      phone: data.phone ?? "",
+      company_name: data.company_name ?? null,
+      tax_id: data.tax_id ?? null,
+      bio: data.bio ?? null,
+      profile_photo_url: data.profile_photo_url ?? null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from("owner_profiles").upsert(payload);
+    if (error) {
+      fail("Actualizar perfil", error);
+      return false;
+    }
     return true;
   },
 
@@ -699,7 +801,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       return { amenities, buildings: recomputeBuildingAmenityIds(s.buildings, amenities) };
     });
   },
-
+  
   updateAmenity: async (id, patch) => {
     const { data, error } = await supabase
       .from("amenities")
@@ -874,6 +976,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
     }));
   },
 }));
+
+
 
 export const getRole = (u: User | null): Role => u?.role ?? "public";
 

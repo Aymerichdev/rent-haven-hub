@@ -24,11 +24,13 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as UnitsUnitIdRouteImport } from './routes/units.$unitId'
 import { Route as TenantRequestsRouteImport } from './routes/tenant.requests'
 import { Route as TenantRentalsRouteImport } from './routes/tenant.rentals'
+import { Route as TenantProfileRouteImport } from './routes/tenant/profile'
 import { Route as TenantPaymentsRouteImport } from './routes/tenant.payments'
 import { Route as TenantContractsRouteImport } from './routes/tenant.contracts'
 import { Route as TenantAmenitiesRouteImport } from './routes/tenant.amenities'
 import { Route as OwnerUnitsRouteImport } from './routes/owner.units'
 import { Route as OwnerRequestsRouteImport } from './routes/owner.requests'
+import { Route as OwnerProfileRouteImport } from './routes/owner/profile'
 import { Route as OwnerPaymentsRouteImport } from './routes/owner.payments'
 import { Route as OwnerMetersRouteImport } from './routes/owner.meters'
 import { Route as OwnerBuildingsRouteImport } from './routes/owner.buildings'
@@ -111,6 +113,11 @@ const TenantRentalsRoute = TenantRentalsRouteImport.update({
   path: '/rentals',
   getParentRoute: () => TenantRoute,
 } as any)
+const TenantProfileRoute = TenantProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => TenantRoute,
+} as any)
 const TenantPaymentsRoute = TenantPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
@@ -134,6 +141,11 @@ const OwnerUnitsRoute = OwnerUnitsRouteImport.update({
 const OwnerRequestsRoute = OwnerRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerProfileRoute = OwnerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => OwnerRoute,
 } as any)
 const OwnerPaymentsRoute = OwnerPaymentsRouteImport.update({
@@ -182,11 +194,13 @@ export interface FileRoutesByFullPath {
   '/owner/buildings': typeof OwnerBuildingsRouteWithChildren
   '/owner/meters': typeof OwnerMetersRoute
   '/owner/payments': typeof OwnerPaymentsRoute
+  '/owner/profile': typeof OwnerProfileRoute
   '/owner/requests': typeof OwnerRequestsRoute
   '/owner/units': typeof OwnerUnitsRoute
   '/tenant/amenities': typeof TenantAmenitiesRoute
   '/tenant/contracts': typeof TenantContractsRoute
   '/tenant/payments': typeof TenantPaymentsRoute
+  '/tenant/profile': typeof TenantProfileRoute
   '/tenant/rentals': typeof TenantRentalsRoute
   '/tenant/requests': typeof TenantRequestsRoute
   '/units/$unitId': typeof UnitsUnitIdRoute
@@ -207,11 +221,13 @@ export interface FileRoutesByTo {
   '/owner/buildings': typeof OwnerBuildingsRouteWithChildren
   '/owner/meters': typeof OwnerMetersRoute
   '/owner/payments': typeof OwnerPaymentsRoute
+  '/owner/profile': typeof OwnerProfileRoute
   '/owner/requests': typeof OwnerRequestsRoute
   '/owner/units': typeof OwnerUnitsRoute
   '/tenant/amenities': typeof TenantAmenitiesRoute
   '/tenant/contracts': typeof TenantContractsRoute
   '/tenant/payments': typeof TenantPaymentsRoute
+  '/tenant/profile': typeof TenantProfileRoute
   '/tenant/rentals': typeof TenantRentalsRoute
   '/tenant/requests': typeof TenantRequestsRoute
   '/units/$unitId': typeof UnitsUnitIdRoute
@@ -236,11 +252,13 @@ export interface FileRoutesById {
   '/owner/buildings': typeof OwnerBuildingsRouteWithChildren
   '/owner/meters': typeof OwnerMetersRoute
   '/owner/payments': typeof OwnerPaymentsRoute
+  '/owner/profile': typeof OwnerProfileRoute
   '/owner/requests': typeof OwnerRequestsRoute
   '/owner/units': typeof OwnerUnitsRoute
   '/tenant/amenities': typeof TenantAmenitiesRoute
   '/tenant/contracts': typeof TenantContractsRoute
   '/tenant/payments': typeof TenantPaymentsRoute
+  '/tenant/profile': typeof TenantProfileRoute
   '/tenant/rentals': typeof TenantRentalsRoute
   '/tenant/requests': typeof TenantRequestsRoute
   '/units/$unitId': typeof UnitsUnitIdRoute
@@ -266,11 +284,13 @@ export interface FileRouteTypes {
     | '/owner/buildings'
     | '/owner/meters'
     | '/owner/payments'
+    | '/owner/profile'
     | '/owner/requests'
     | '/owner/units'
     | '/tenant/amenities'
     | '/tenant/contracts'
     | '/tenant/payments'
+    | '/tenant/profile'
     | '/tenant/rentals'
     | '/tenant/requests'
     | '/units/$unitId'
@@ -291,11 +311,13 @@ export interface FileRouteTypes {
     | '/owner/buildings'
     | '/owner/meters'
     | '/owner/payments'
+    | '/owner/profile'
     | '/owner/requests'
     | '/owner/units'
     | '/tenant/amenities'
     | '/tenant/contracts'
     | '/tenant/payments'
+    | '/tenant/profile'
     | '/tenant/rentals'
     | '/tenant/requests'
     | '/units/$unitId'
@@ -319,11 +341,13 @@ export interface FileRouteTypes {
     | '/owner/buildings'
     | '/owner/meters'
     | '/owner/payments'
+    | '/owner/profile'
     | '/owner/requests'
     | '/owner/units'
     | '/tenant/amenities'
     | '/tenant/contracts'
     | '/tenant/payments'
+    | '/tenant/profile'
     | '/tenant/rentals'
     | '/tenant/requests'
     | '/units/$unitId'
@@ -454,6 +478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantRentalsRouteImport
       parentRoute: typeof TenantRoute
     }
+    '/tenant/profile': {
+      id: '/tenant/profile'
+      path: '/profile'
+      fullPath: '/tenant/profile'
+      preLoaderRoute: typeof TenantProfileRouteImport
+      parentRoute: typeof TenantRoute
+    }
     '/tenant/payments': {
       id: '/tenant/payments'
       path: '/payments'
@@ -487,6 +518,13 @@ declare module '@tanstack/react-router' {
       path: '/requests'
       fullPath: '/owner/requests'
       preLoaderRoute: typeof OwnerRequestsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/profile': {
+      id: '/owner/profile'
+      path: '/profile'
+      fullPath: '/owner/profile'
+      preLoaderRoute: typeof OwnerProfileRouteImport
       parentRoute: typeof OwnerRoute
     }
     '/owner/payments': {
@@ -563,6 +601,7 @@ interface OwnerRouteChildren {
   OwnerBuildingsRoute: typeof OwnerBuildingsRouteWithChildren
   OwnerMetersRoute: typeof OwnerMetersRoute
   OwnerPaymentsRoute: typeof OwnerPaymentsRoute
+  OwnerProfileRoute: typeof OwnerProfileRoute
   OwnerRequestsRoute: typeof OwnerRequestsRoute
   OwnerUnitsRoute: typeof OwnerUnitsRoute
   OwnerIndexRoute: typeof OwnerIndexRoute
@@ -573,6 +612,7 @@ const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerBuildingsRoute: OwnerBuildingsRouteWithChildren,
   OwnerMetersRoute: OwnerMetersRoute,
   OwnerPaymentsRoute: OwnerPaymentsRoute,
+  OwnerProfileRoute: OwnerProfileRoute,
   OwnerRequestsRoute: OwnerRequestsRoute,
   OwnerUnitsRoute: OwnerUnitsRoute,
   OwnerIndexRoute: OwnerIndexRoute,
@@ -584,6 +624,7 @@ interface TenantRouteChildren {
   TenantAmenitiesRoute: typeof TenantAmenitiesRoute
   TenantContractsRoute: typeof TenantContractsRoute
   TenantPaymentsRoute: typeof TenantPaymentsRoute
+  TenantProfileRoute: typeof TenantProfileRoute
   TenantRentalsRoute: typeof TenantRentalsRoute
   TenantRequestsRoute: typeof TenantRequestsRoute
   TenantIndexRoute: typeof TenantIndexRoute
@@ -593,6 +634,7 @@ const TenantRouteChildren: TenantRouteChildren = {
   TenantAmenitiesRoute: TenantAmenitiesRoute,
   TenantContractsRoute: TenantContractsRoute,
   TenantPaymentsRoute: TenantPaymentsRoute,
+  TenantProfileRoute: TenantProfileRoute,
   TenantRentalsRoute: TenantRentalsRoute,
   TenantRequestsRoute: TenantRequestsRoute,
   TenantIndexRoute: TenantIndexRoute,

@@ -3,8 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 
@@ -13,9 +11,7 @@ function createSupabaseClient() {
       ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
       ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+    throw new Error(`Missing Supabase env vars: ${missing.join(', ')}`);
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -23,7 +19,7 @@ function createSupabaseClient() {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
-    }
+    },
   });
 }
 
@@ -31,6 +27,7 @@ let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
+
 export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
   get(_, prop, receiver) {
     if (!_supabase) _supabase = createSupabaseClient();
@@ -38,18 +35,15 @@ export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>,
   },
 });
 
-// Best-effort cleanup for client-side Supabase resources (realtime sockets, listeners)
-export function closeSupabaseClient() {
+export async function closeSupabaseClient() {
+  if (!_supabase) return;
   try {
-    if (!_supabase) return;
-    // Try common cleanup methods used by supabase-js internals
-    const maybeAny = _supabase as any;
-    try { maybeAny.removeAllChannels?.(); } catch {}
-    try { maybeAny.realtime?.disconnect?.(); } catch {}
-    try { maybeAny.realtime?.close?.(); } catch {}
-    try { maybeAny.removeAllSubscriptions?.(); } catch {}
-  } finally {
-    // clear reference so new client can be created later if needed
+    await _supabase.removeAllChannels();
+  } catch {}
+  try {
+    await _supabase.realtime.disconnect();
+  } catch {}
+  finally {
     _supabase = undefined;
   }
 }

@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { RequireRole } from "@/components/site/RequireRole";
 import { DashboardShell } from "@/components/site/DashboardShell";
-import { LayoutDashboard, Home, FileText, CreditCard, Sparkles, Inbox } from "lucide-react";
+import { LayoutDashboard, Home, FileText, CreditCard, Sparkles, Inbox, UserRound } from "lucide-react";
 
 export const Route = createFileRoute("/tenant")({
   component: Layout,
@@ -20,6 +20,7 @@ function Layout() {
           { to: "/tenant/contracts", label: "Contratos", icon: <FileText className="h-4 w-4" /> },
           { to: "/tenant/payments", label: "Pagos", icon: <CreditCard className="h-4 w-4" /> },
           { to: "/tenant/amenities", label: "Reservar amenidades", icon: <Sparkles className="h-4 w-4" /> },
+          { to: "/tenant/profile", label: "Mi perfil", icon: <UserRound className="h-4 w-4" /> },
         ]}
       >
         <Outlet />
