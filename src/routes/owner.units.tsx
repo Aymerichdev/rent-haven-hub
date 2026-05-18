@@ -31,10 +31,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Pencil, Building2, KeyRound, DoorOpen, X } from "lucide-react";
+import { Plus, Trash2, Pencil, Building2, KeyRound, DoorOpen } from "lucide-react";
 import type { Unit } from "@/lib/types";
-import prop1 from "@/assets/prop1.jpg";
 import { toast } from "sonner";
+import { ImageUploader } from "@/components/site/ImageUploader";
 
 export const Route = createFileRoute("/owner/units")({
   component: Page,
@@ -72,18 +72,11 @@ function Page() {
     setRentPhoto("");
   };
 
-  const onPhotoChange = (file: File | undefined) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setRentPhoto(String(reader.result));
-    reader.readAsDataURL(file);
-  };
-
-  const confirmRent = () => {
+  const confirmRent = async () => {
     if (!rentUnit) return;
     if (!rentStart || !rentEnd) return toast.error("Inicio y fin son obligatorios");
     if (rentEnd <= rentStart) return toast.error("La fecha de fin debe ser posterior al inicio");
-    markRented(rentUnit.id, {
+    await markRented(rentUnit.id, {
       tenantId: rentTenant || undefined,
       startDate: rentStart,
       endDate: rentEnd,
@@ -128,7 +121,7 @@ function Page() {
     title: "",
     description: "",
     type: "apartment",
-    images: [prop1],
+    images: [],
     bedrooms: 1,
     bathrooms: 1,
     area: 50,
@@ -153,9 +146,10 @@ function Page() {
     setOpen(true);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!form.number.trim()) return toast.error("El número es obligatorio");
     if (!form.title.trim()) return toast.error("El título es obligatorio");
+    if (form.images.length === 0) return toast.error("Debes subir al menos una imagen");
     if (!form.buildingId) {
       if (!form.addressOverride?.trim() || !form.cityOverride?.trim())
         return toast.error("Sin edificio: dirección y ciudad son obligatorias");
@@ -171,10 +165,10 @@ function Page() {
         );
         if (dup) return toast.error("Ya existe una unidad con ese número en el edificio");
       }
-      upd(editing.id, form);
+      await upd(editing.id, form);
       toast.success("Unidad actualizada");
     } else {
-      const r = add(form);
+      const r = await add(form);
       if (!r.ok) return toast.error(r.reason);
       toast.success("Unidad creada");
     }
@@ -357,6 +351,20 @@ function Page() {
                   <Label htmlFor="featured" className="cursor-pointer">
                     Destacar en página principal
                   </Label>
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>Imágenes *</Label>
+                  <ImageUploader
+                    multiple
+                    folder={`units/${editing?.id ?? "new"}`}
+                    value={form.images}
+                    onChange={(urls) => setForm({ ...form, images: urls })}
+                  />
+                  {form.images.length === 0 && (
+                    <p className="mt-1 text-xs text-destructive">
+                      Debes subir al menos una imagen
+                    </p>
+                  )}
                 </div>
               </div>
               <DialogFooter>
@@ -551,28 +559,11 @@ function Page() {
 
             <section className="space-y-2">
               <h3 className="font-display text-sm font-bold">Foto del contrato (opcional)</h3>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => onPhotoChange(e.target.files?.[0])}
+              <ImageUploader
+                folder={`contracts/${rentUnit?.id ?? "new"}`}
+                value={rentPhoto || undefined}
+                onChange={(url) => setRentPhoto(url ?? "")}
               />
-              {rentPhoto && (
-                <div className="space-y-2">
-                  <img
-                    src={rentPhoto}
-                    alt="Contrato"
-                    className="max-w-[200px] rounded-lg border border-border"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setRentPhoto("")}
-                  >
-                    <X className="mr-1 h-3.5 w-3.5" /> Eliminar foto
-                  </Button>
-                </div>
-              )}
             </section>
           </div>
           <DialogFooter>

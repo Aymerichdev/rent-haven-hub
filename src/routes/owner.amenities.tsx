@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { ImageUploader } from "@/components/site/ImageUploader";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Pencil, Upload, Users } from "lucide-react";
+import { Plus, Trash2, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { Amenity, AmenitySchedule, WeekDay } from "@/lib/types";
 import { WEEK_DAYS, scheduleSummary } from "@/lib/amenity-utils";
@@ -75,7 +76,7 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm(ownerBuildings[0]?.id ?? ""));
-  const fileRef = useRef<HTMLInputElement>(null);
+  
 
   const openCreate = () => {
     setEditingId(null);
@@ -98,14 +99,6 @@ function Page() {
     setOpen(true);
   };
 
-  const onFile = (file: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return toast.error("Selecciona una imagen");
-    if (file.size > 5 * 1024 * 1024) return toast.error("Imagen demasiado grande (máx 5MB)");
-    const reader = new FileReader();
-    reader.onload = () => setForm((f) => ({ ...f, photoUrl: String(reader.result) }));
-    reader.readAsDataURL(file);
-  };
 
   const toggleDay = (d: WeekDay) =>
     setForm((f) => ({
@@ -284,50 +277,12 @@ function Page() {
             </div>
 
             <div>
-              <Label>Foto</Label>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+              <Label>Foto (opcional)</Label>
+              <ImageUploader
+                folder={`amenities/${editingId ?? "new"}`}
+                value={form.photoUrl}
+                onChange={(url) => setForm({ ...form, photoUrl: url })}
               />
-              {form.photoUrl ? (
-                <div className="mt-2 space-y-2">
-                  <img
-                    src={form.photoUrl}
-                    alt="Vista previa"
-                    className="max-w-[300px] rounded-lg border border-border"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      Cambiar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setForm({ ...form, photoUrl: undefined })}
-                    >
-                      Quitar foto
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-1"
-                  onClick={() => fileRef.current?.click()}
-                >
-                  <Upload className="mr-2 h-4 w-4" /> Subir imagen
-                </Button>
-              )}
             </div>
 
             <div>
