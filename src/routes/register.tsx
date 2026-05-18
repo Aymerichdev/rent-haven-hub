@@ -612,7 +612,7 @@ function Page() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="taxId">Tax ID / RFC</Label>
+                        <Label htmlFor="taxId">Cedula Nacional</Label>
                         <Input
                           id="taxId"
                           value={ownerForm.taxId}

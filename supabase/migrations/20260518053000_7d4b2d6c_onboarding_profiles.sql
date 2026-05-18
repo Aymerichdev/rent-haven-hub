@@ -41,3 +41,15 @@ create policy "owner_profiles_insert_self" on public.owner_profiles
 create policy "owner_profiles_update_self" on public.owner_profiles
   for update to authenticated using (id = auth.uid() or public.has_role(auth.uid(),'admin'))
   with check (id = auth.uid() or public.has_role(auth.uid(),'admin'));
+
+-- Modificar tenant_profiles para soportar múltiples fotos y nuevos campos
+ALTER TABLE public.tenant_profiles
+  ADD COLUMN IF NOT EXISTS photos text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS employer text,
+  ADD COLUMN IF NOT EXISTS work_certificate_url text,
+  ADD COLUMN IF NOT EXISTS credit_auth boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS credit_auth_date timestamptz;
+
+-- Hacer profile_photo_url nullable (foto principal, ahora es la primera del array)
+ALTER TABLE public.tenant_profiles
+  ALTER COLUMN profile_photo_url DROP NOT NULL;
