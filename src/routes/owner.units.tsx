@@ -121,7 +121,7 @@ function Page() {
     title: "",
     description: "",
     type: "apartment",
-    images: [prop1],
+    images: [],
     bedrooms: 1,
     bathrooms: 1,
     area: 50,
@@ -146,9 +146,10 @@ function Page() {
     setOpen(true);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!form.number.trim()) return toast.error("El número es obligatorio");
     if (!form.title.trim()) return toast.error("El título es obligatorio");
+    if (form.images.length === 0) return toast.error("Debes subir al menos una imagen");
     if (!form.buildingId) {
       if (!form.addressOverride?.trim() || !form.cityOverride?.trim())
         return toast.error("Sin edificio: dirección y ciudad son obligatorias");
@@ -164,10 +165,10 @@ function Page() {
         );
         if (dup) return toast.error("Ya existe una unidad con ese número en el edificio");
       }
-      upd(editing.id, form);
+      await upd(editing.id, form);
       toast.success("Unidad actualizada");
     } else {
-      const r = add(form);
+      const r = await add(form);
       if (!r.ok) return toast.error(r.reason);
       toast.success("Unidad creada");
     }
